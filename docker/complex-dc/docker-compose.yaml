@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+     - "80:80"
+    networks:
+      - net01
+    volumes:
+      - ./nginx.conf:/..../nginx.conf
+    depends_on:
+      - web
+
+  web: 
+    image: mypython:v1
+    build: 
+      context: ./dirname
+      dockerfile: Dockerfile-web 
+    ports:
+      - 8080:8000
+    networks:
+      - net01
+    volumes:
+      - webdata:/app
+    depends_on:
+      - db 
+      - redis 
+      - rabbitmq
+    environment:
+      - DB_URL: value
+      - REDIS_URL: value
+      - rabbitmq: value
+  db:
+    image: mysql:latest
+    networks:
+      - net01
+    volumes:
+      - dbdata:/var/lib/mysql 
+    environment:
+      - r_pwd: value
+      - DB_name: value
+      - user: value
+      - pwd: value
+  redis:
+    image: redis:latest
+    networks:
+      - net01
+  rabbitmq:
+    image: rabbitmq:latest
+    ports:
+      - "5672:5672"
+    networks:
+      - net01
+    volumes:
+      - rabbitmq:/.../rabbitmqdb
+    environment:
+      - user: value
+      - pwd: value
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: "100M"
+      restart_policy:
+        condition: on-failure
+    healthcheck:
+      test: ["CMD", "rabbitmqctl status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+networks:
+   net01:
+     driver: bridge 
+
+volumes:
+  webdata:
+  dbdata:
+  rabbitmq:
